@@ -31,4 +31,3 @@ build/
 
 # Large data files
 data/*.csv
-gapmap.db
