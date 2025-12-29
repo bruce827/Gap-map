@@ -1,0 +1,30 @@
+node_modules
+.env
+.env.local
+.env.*.local
+
+# Generated files
+/generated/prisma
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Temporary files
+.tmp/
+
+# SQLite database (regenerated)
+gapmap.db-shm
+gapmap.db-wal
+
+# Build output
+dist/
+build/

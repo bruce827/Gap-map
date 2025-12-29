@@ -1,0 +1,14 @@
+{
+  "name": "gap-map-demo",
+  "version": "1.0.0",
+  "description": "Demo for Gap-map project using existing SQLite DB",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.7",
+    "dotenv": "^16.4.1"
+  }
+}

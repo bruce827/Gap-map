@@ -1,0 +1,405 @@
+// Gap-map Prisma Schema
+// 躺平城市可视化系统数据库结构
+// SQLite版本 - 枚举值使用String存储
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// 标准行政区划表 (Layer 1)
+// ============================================================
+
+// 省份表
+model Province {
+  id          String   @id           // 行政代码 (如: 230000)
+  name        String   @unique       // 省份名称 (黑龙江省)
+  shortName   String?                // 简称 (黑龙江)
+  pinyin      String?                // 拼音
+  lat         Float?                 // 省会纬度
+  lng         Float?                 // 省会经度
+  
+  cities      City[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 城市表 (地级市/自治州/地区)
+model City {
+  id          String   @id           // 行政代码 (如: 230400)
+  name        String                 // 城市名称 (鹤岗市)
+  shortName   String?                // 简称 (鹤岗)
+  pinyin      String?                // 拼音
+  
+  provinceId  String
+  province    Province @relation(fields: [provinceId], references: [id])
+  
+  lat         Float?                 // 纬度
+  lng         Float?                 // 经度
+  level       String?                // 城市级别: MUNICIPALITY/PREFECTURE/COUNTY_LEVEL等
+  areaCode    String?                // 电话区号
+  zipCode     String?                // 邮编
+  
+  districts     District[]
+  tangpingCity  TangpingCity?
+  weather       Weather[]
+  socialNotes   SocialNote[]
+  news          News[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([provinceId, name])
+  @@index([provinceId])
+}
+
+// 区县表
+model District {
+  id          String   @id           // 行政代码
+  name        String                 // 区县名称
+  shortName   String?                // 简称
+  pinyin      String?                // 拼音
+  
+  cityId      String
+  city        City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  
+  lat         Float?
+  lng         Float?
+  
+  targetLocations TargetLocation[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([cityId])
+}
+
+// ============================================================
+// 躺平城市业务数据表 (Layer 3)
+// ============================================================
+
+// 躺平城市扩展表 (一对一关联City)
+model TangpingCity {
+  id            String   @id @default(cuid())
+  
+  cityId        String   @unique
+  city          City     @relation(fields: [cityId], references: [id])
+  
+  isFocus       Boolean  @default(false)  // 是否重点关注
+  tangpingScore Float?                    // 躺平指数 (0-100)
+  rank          Int?                      // 躺平排名
+  
+  description   String?                   // 城市描述
+  tags          String?                   // 标签 (JSON字符串)
+  districtNames String?                   // 原始CSV区县字段
+  
+  housing       CityHousing?
+  medical       CityMedical?
+  climate       CityClimate?
+  living        CityLiving?
+  transport     CityTransport?
+  economy       CityEconomy?
+  targetLocations TargetLocation[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// 躺平目标地点 (具体小区/区域)
+model TargetLocation {
+  id            String   @id @default(cuid())
+  name          String                    // 地点名称
+  
+  tangpingCityId String
+  tangpingCity  TangpingCity @relation(fields: [tangpingCityId], references: [id], onDelete: Cascade)
+  
+  districtId    String?
+  district      District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  
+  lat           Float?
+  lng           Float?
+  avgPrice      Float?                    // 该地点平均房价
+  rentPrice     Float?                    // 租金
+  description   String?
+  tags          String?                   // 标签 (JSON字符串)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([tangpingCityId])
+}
+
+// 城市经济数据
+model CityEconomy {
+  id                String   @id @default(cuid())
+  tangpingCityId    String   @unique
+  tangpingCity      TangpingCity @relation(fields: [tangpingCityId], references: [id], onDelete: Cascade)
+  
+  population        Float?                 // 人口 (万)
+  gdp               Float?                 // GDP (亿元)
+  gdpPerCapita      Float?                 // 人均GDP
+  disposableIncome  Float?                 // 人均可支配收入
+  avgSalary         Float?                 // 平均工资
+  unemploymentRate  Float?                 // 失业率
+  dataYear          Int?                   // 数据年份
+  dataSource        String?                // 数据来源
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// 城市房产信息
+model CityHousing {
+  id                    String   @id @default(cuid())
+  tangpingCityId        String   @unique
+  tangpingCity          TangpingCity @relation(fields: [tangpingCityId], references: [id], onDelete: Cascade)
+  
+  // 来自CSV原始字段
+  avgSecondHandPrice    String?  // 原始文本: "约2200元/平方米"
+  avgSecondHandPriceNum Float?   // 解析后数值
+  suitePrice            String?  // 一套房价格原始文本
+  suitePriceNum         Float?   // 解析后数值
+  lowPriceArea          String?  // 低房价区域
+  lowPrice              String?  // 低房价格原始文本
+  lowPriceNum           Float?   // 解析后数值
+  
+  // 扩展字段
+  rentPriceRange        String?
+  rentPriceMin          Float?
+  rentPriceMax          Float?
+  priceYoY              Float?   // 房价同比变化率
+  dataSource            String?
+  dataDate              DateTime?
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// 城市医疗信息
+model CityMedical {
+  id                String   @id @default(cuid())
+  tangpingCityId    String   @unique
+  tangpingCity      TangpingCity @relation(fields: [tangpingCityId], references: [id], onDelete: Cascade)
+  
+  // 来自CSV原始字段
+  hospitalLevelRaw  String?        // 原始文本
+  hospitalLevel     String?        // 枚举值: LEVEL_3A/LEVEL_3B/LEVEL_3/LEVEL_2A/UNKNOWN
+  hospitalName      String?        // 医院名称
+  
+  // 扩展字段
+  hospitalCount3A   Int?           // 三甲医院数量
+  hospitalCount     Int?           // 医院总数
+  bedsPer1000       Float?         // 每千人床位数
+  doctorsPer1000    Float?         // 每千人医生数
+  hospitalList      String?        // 医院列表 (JSON)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// 城市气候信息
+model CityClimate {
+  id                String   @id @default(cuid())
+  tangpingCityId    String   @unique
+  tangpingCity      TangpingCity @relation(fields: [tangpingCityId], references: [id], onDelete: Cascade)
+  
+  // 来自CSV原始字段
+  latitudeTypeRaw   String?        // 原始文本
+  latitudeType      String?        // 枚举值: MANZHOU_COLD/COASTAL_COLD/INLAND/WARM/ISLAND/UNKNOWN
+  comfortDays       Int?           // 全年气温舒适天数
+  greenCoverageRate Float?         // 城市绿化覆盖率
+  
+  // 扩展字段
+  avgTempYear       Float?         // 年平均气温
+  avgTempSummer     Float?         // 夏季平均气温
+  avgTempWinter     Float?         // 冬季平均气温
+  precipitation     Float?         // 年降水量
+  avgAqi            Float?         // 年平均AQI
+  goodAirDays       Int?           // 优良天气天数
+  climateDescription String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// 城市生活信息
+model CityLiving {
+  id                  String   @id @default(cuid())
+  tangpingCityId      String   @unique
+  tangpingCity        TangpingCity @relation(fields: [tangpingCityId], references: [id], onDelete: Cascade)
+  
+  // 来自CSV原始字段
+  hygieneLevelRaw     String?           // 原始文本
+  hygieneLevel        String?           // 枚举值: NATIONAL/PROVINCIAL/NONE
+  consumptionLevelRaw String?           // 原始文本
+  consumptionLevel    String?           // 枚举值: HIGH/MEDIUM/LOW/UNKNOWN
+  activePopulation    String?           // 活跃人数原始文本
+  
+  // 扩展字段
+  cpi                 Float?            // 消费价格指数
+  foodCostDaily       Float?            // 日均餐饮消费
+  tangpingGroupCount  Int?              // 躺平群组数量
+  tangpingPopulation  Int?              // 躺平社区活跃人数
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// 城市交通信息
+model CityTransport {
+  id                String   @id @default(cuid())
+  tangpingCityId    String   @unique
+  tangpingCity      TangpingCity @relation(fields: [tangpingCityId], references: [id], onDelete: Cascade)
+  
+  // 来自CSV的6种交通方式
+  airplaneRaw       String?             // 原始值
+  airplane          String?             // 枚举值: FULL/TOWN_LEVEL/PARTIAL/NONE
+  highSpeedRailRaw  String?
+  highSpeedRail     String?             // 高铁
+  cityRailRaw       String?
+  cityRail          String?             // 城铁
+  subwayBusRaw      String?
+  subwayBus         String?             // 地铁大巴
+  cityBusRaw        String?
+  cityBus           String?             // 市内公交
+  railwayRaw        String?
+  railway           String?             // 铁路
+  
+  // 扩展字段 (布尔值便于快速查询)
+  hasAirport        Boolean  @default(false)
+  hasHighSpeedRail  Boolean  @default(false)
+  hasCityRail       Boolean  @default(false)
+  hasSubway         Boolean  @default(false)
+  
+  transportScore    Float?              // 交通评分
+  nearestAirport    String?             // 最近机场
+  airportDistance   Float?              // 距机场距离(km)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ============================================================
+// 实时/动态数据表 (Layer 4)
+// ============================================================
+
+// 天气数据
+model Weather {
+  id          String   @id @default(cuid())
+  cityId      String
+  city        City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  
+  temp        Float                     // 温度
+  weather     String                    // 天气状况
+  humidity    Int                       // 湿度
+  windSpeed   Float                     // 风速
+  aqi         Int?                      // 空气质量指数
+  aqiLevel    String?                   // 空气质量等级
+  forecast    String?                   // 7天预报 (JSON)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([cityId])
+}
+
+// 社交媒体评价
+model SocialNote {
+  id          String   @id @default(cuid())
+  cityId      String
+  city        City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  
+  platform    String                    // xiaohongshu/weibo/zhihu/douyin
+  title       String
+  content     String?
+  author      String?
+  authorAvatar String?
+  
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  shares      Int      @default(0)
+  
+  sentiment   String?                   // positive/neutral/negative
+  sentimentScore Float?
+  
+  url         String?
+  coverImage  String?
+  
+  publishedAt DateTime?
+  scrapedAt   DateTime @default(now())
+  
+  @@index([cityId, platform])
+}
+
+// 新闻
+model News {
+  id          String   @id @default(cuid())
+  cityId      String?
+  city        City?    @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  
+  title       String
+  summary     String?
+  url         String
+  source      String
+  
+  publishedAt DateTime
+  scrapedAt   DateTime @default(now())
+  
+  @@index([cityId])
+}
+
+// ============================================================
+// 辅助表
+// ============================================================
+
+// 数据来源记录
+model DataSource {
+  id          String   @id @default(cuid())
+  name        String                    // 数据源名称
+  type        String                    // csv/api/scraper/opendata
+  url         String?                   // 数据源URL
+  description String?
+  
+  lastSyncAt  DateTime?
+  syncStatus  String?                   // success/failed
+  recordCount Int?
+  version     String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 爬虫日志
+model ScraperLog {
+  id          String   @id @default(cuid())
+  scraper     String
+  status      String                    // success/failed
+  cityName    String?
+  
+  itemsCount  Int      @default(0)
+  duration    Int?                      // 耗时(秒)
+  error       String?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([scraper, createdAt])
+}
+
+// 用户收藏
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  cityId    String                      // 关联City
+  note      String?
+  tags      String?                     // JSON字符串
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, cityId])
+}

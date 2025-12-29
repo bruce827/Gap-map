@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>反卷躺平城市可视化 Demo</title>
+    <style>
+        html, body, #container {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .info-window {
+            padding: 10px;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            min-width: 200px;
+        }
+        .info-window h3 {
+            margin: 0 0 8px 0;
+            color: #333;
+            font-size: 16px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .info-window p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #666;
+        }
+        .info-window .highlight {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .custom-marker {
+            background-color: #1e88e5;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            text-align: center;
+            line-height: 24px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            border: 2px solid white;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            line-height: 1;
+        }
+        .modal-header {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .detail-row {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .detail-label {
+            width: 120px;
+            color: #666;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        .detail-value {
+            color: #333;
+            word-break: break-all;
+        }
+        .btn-detail {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 12px;
+            background-color: #f0f9ff;
+            color: #1e88e5;
+            border: 1px solid #1e88e5;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-detail:hover {
+            background-color: #e1f5fe;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <div id="loading" class="loading">正在加载地图数据...</div>
+
+    <!-- Details Modal -->
+    <div id="detailsModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeDetails()">×</span>
+            <div class="modal-header">
+                <h2 id="modalTitle">城市详情</h2>
+            </div>
+            <div id="modalBody">
+                <!-- Details will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        let map; // Declare map globally
+        let geocoder;
+        let weather; // Weather service
+        let locationMarker;
+        let allCitiesData = []; // Store all data for access
+
+        // Helper to update status
+        function updateStatus(msg) {
+            console.log(msg);
+            const el = document.getElementById('loading');
+            if(el) el.textContent = msg;
+        }
+
+        // 1. 初始化地图配置
+        async function init() {
+            try {
+                updateStatus('正在获取配置...');
+                // Fetch config from server
+                const configRes = await fetch('/api/config');
+                const config = await configRes.json();
+                
+                if (!config.amapKey) {
+                    alert('未检测到高德地图 API Key，请检查 .env 文件');
+                    return;
+                }
+
+                updateStatus('正在加载高德地图脚本...');
+
+                // Set security config
+                window._AMapSecurityConfig = {
+                    securityJsCode: config.amapSecurityCode,
+                };
+
+                // Load AMap script with Geocoder and Weather plugins
+                const script = document.createElement('script');
+                script.src = `https://webapi.amap.com/maps?v=2.0&key=${config.amapKey}&plugin=AMap.Geocoder,AMap.Weather`;
+                script.onload = () => {
+                    updateStatus('脚本加载完成，正在初始化地图...');
+                    loadMap();
+                };
+                script.onerror = (e) => {
+                    console.error('Script load error:', e);
+                    updateStatus('高德地图脚本加载失败，请检查网络或Key是否正确');
+                };
+                document.head.appendChild(script);
+
+            } catch (error) {
+                console.error('Failed to initialize:', error);
+                updateStatus('初始化失败: ' + error.message);
+            }
+        }
+
+        // 2. 加载地图和数据
+        function loadMap() {
+            try {
+                if (typeof AMap === 'undefined') {
+                    throw new Error('AMap 对象未定义，脚本可能加载失败');
+                }
+
+                map = new AMap.Map('container', {
+                    zoom: 4.5,
+                    center: [108.940174, 34.341568], // Center of China roughly
+                    viewMode: '2D'
+                });
+                
+                // Map load complete event
+                map.on('complete', () => {
+                    console.log('Map loaded successfully');
+                });
+
+                // Initialize Geocoder and Weather
+                geocoder = new AMap.Geocoder();
+                weather = new AMap.Weather();
+
+                updateStatus('正在获取城市数据...');
+
+                // Fetch city data
+                fetch('/api/cities')
+                    .then(res => res.json())
+                    .then(cities => {
+                        if (cities.error) {
+                            throw new Error(cities.error);
+                        }
+                        
+                        allCitiesData = cities; // Store globally
+                        
+                        document.getElementById('loading').style.display = 'none';
+                        const infoWindow = new AMap.InfoWindow({
+                            offset: new AMap.Pixel(0, -30)
+                        });
+
+                        cities.forEach((city, index) => {
+                            if (!city.lat || !city.lng) return;
+
+                            const marker = new AMap.Marker({
+                                position: [city.lng, city.lat],
+                                title: city.name,
+                                content: `<div class="custom-marker">${city.rank || '?'}</div>`,
+                                offset: new AMap.Pixel(-12, -12),
+                                map: map
+                            });
+
+                            marker.on('click', () => {
+                                const content = `
+                                    <div class="info-window">
+                                        <h3>${city.name} <small>(${city.province})</small></h3>
+                                        <p>📍 区域: <span class="highlight" style="cursor: pointer; text-decoration: underline; color: #1e88e5;" onclick="window.locateDetail('${city.province}${city.name}${city.district || ''}')" title="点击定位详细地址">${city.province}/${city.name}${city.district ? '/' + city.district : ''}</span></p>
+                                        <p>🏆 排名: <span class="highlight">${city.rank || 'N/A'}</span></p>
+                                        <p>💰 房价: <span class="highlight">${city.price ? (city.price / 10000).toFixed(1) + '万元' : '暂无数据'}</span></p>
+                                        <p>🌤️ 今日气温: <span id="weather-temp-range-${index}" style="color: #666;">加载中...</span></p>
+                                        <p>🌡️ 舒适天数: ${city.comfort_days || '-'} 天</p>
+                                        <p>🌳 绿化率: ${city.green_rate ? city.green_rate + '%' : '-'}</p>
+                                        <button class="btn-detail" onclick="window.showDetails(${index})">查看完整详情</button>
+                                    </div>
+                                `;
+                                infoWindow.setContent(content);
+                                infoWindow.open(map, marker.getPosition());
+                                
+                                // Fetch weather
+                                if (weather) {
+                                    weather.getForecast(city.name, (err, data) => {
+                                        const el = document.getElementById(`weather-temp-range-${index}`);
+                                        if (!el) return;
+
+                                        if (err) {
+                                            el.textContent = '查询失败';
+                                            return;
+                                        }
+                                        if (data && data.forecasts && data.forecasts.length) {
+                                            const today = data.forecasts[0];
+                                            // Format: Low ~ High
+                                            el.textContent = `${today.nightTemp}℃ ~ ${today.dayTemp}℃`;
+                                            el.className = 'highlight'; 
+                                            el.style.color = ''; // Remove gray color
+                                        } else {
+                                            el.textContent = '暂无数据';
+                                        }
+                                    });
+                                }
+                            });
+                        });
+                    })
+                    .catch(err => {
+                        console.error('Error loading data:', err);
+                        updateStatus('数据加载失败: ' + err.message);
+                    });
+
+            } catch (err) {
+                console.error('Map init error:', err);
+                updateStatus('地图初始化失败: ' + err.message);
+            }
+        }
+
+
+        // 3. Locate detailed address
+        window.locateDetail = function(address) {
+            // ... existing code ...
+            if (!geocoder) return;
+
+            document.getElementById('loading').textContent = '正在解析地址...';
+            document.getElementById('loading').style.display = 'block';
+
+            geocoder.getLocation(address, function(status, result) {
+                document.getElementById('loading').style.display = 'none';
+
+                if (status === 'complete' && result.geocodes.length) {
+                    const lnglat = result.geocodes[0].location;
+                    
+                    if (locationMarker) {
+                        map.remove(locationMarker);
+                    }
+
+                    locationMarker = new AMap.Marker({
+                        position: lnglat,
+                        map: map,
+                        icon: new AMap.Icon({
+                            size: new AMap.Size(25, 34),
+                            image: '//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png',
+                            imageSize: new AMap.Size(25, 34)
+                        }),
+                        offset: new AMap.Pixel(-13, -30)
+                    });
+
+                    // Add a label to indicate precise location
+                    locationMarker.setLabel({
+                        offset: new AMap.Pixel(0, 30), 
+                        content: `<div style="background-color: white; border: 1px solid #ccc; padding: 2px 5px; border-radius: 3px; font-size: 12px;">精准定位</div>`,
+                        direction: 'center'
+                    });
+
+                    map.setFitView([locationMarker], false, [60, 60, 60, 60], 12);
+                    console.log(`Located ${address} at`, lnglat);
+                } else {
+                    alert('抱歉，未能解析到该地址的精确位置');
+                    console.error('Geocode failed:', status, result);
+                }
+            });
+        };
+
+        // 4. Show Details Modal
+        window.showDetails = function(index) {
+            const city = allCitiesData[index];
+            if (!city || !city.raw) return;
+
+            document.getElementById('modalTitle').textContent = `${city.name} - 详细信息`;
+            
+            const raw = city.raw;
+            let html = '';
+            
+            // Define keys to skip or order
+            const skipKeys = ['躺平城市ID', '城市代码', '省份代码', 'id', 'cityId', 'provinceId', 'createdAt', 'updatedAt'];
+            
+            Object.keys(raw).forEach(key => {
+                const value = raw[key];
+                // Skip empty values, nulls, "-", "/", or internal IDs
+                if (value === null || value === '' || value === undefined || value === '-' || value === '/' || skipKeys.includes(key)) return;
+
+                html += `
+                    <div class="detail-row">
+                        <div class="detail-label">${key}</div>
+                        <div class="detail-value">${value}</div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('detailsModal').style.display = 'flex';
+        };
+
+        window.closeDetails = function() {
+            document.getElementById('detailsModal').style.display = 'none';
+        };
+
+        // Close modal when clicking outside
+        document.getElementById('detailsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDetails();
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>
