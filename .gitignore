@@ -28,3 +28,7 @@ gapmap.db-wal
 # Build output
 dist/
 build/
+
+# Large data files
+data/*.csv
+gapmap.db
