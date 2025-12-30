@@ -1,7 +1,9 @@
 # 数据库设计规范
-
-> 本文档定义了反卷躺平可视化系统的数据库结构、表关系和索引策略
-
+ 
+ > 本文档定义了反卷躺平可视化系统的数据库结构、表关系和索引策略
+ > 
+ > 说明：本文档为 PostgreSQL 扩展方案（Phase 2+）参考；MVP 默认采用 Prisma + SQLite，且 MVP 阶段不计算“综合躺平指数/排名”。
+ 
 ## 📊 数据库选型
 
 ### 技术栈
@@ -390,7 +392,7 @@ cities (主表)
 
 ### 高频查询索引
 ```sql
--- 1. 城市列表查询（按躺平指数排序）
+-- 1. 城市列表查询（按躺平指数排序，Phase 2，非MVP）
 CREATE INDEX idx_cities_tangping ON cities(tangping_index DESC, population DESC);
 
 -- 2. 房价范围查询
@@ -551,7 +553,7 @@ const prisma = new PrismaClient({
 
 ## 🔍 查询示例
 
-### 1. 查询躺平指数Top10城市
+### 1. 查询躺平指数Top10城市（Phase 2，非MVP）
 ```sql
 SELECT name, tangping_index, house_price, population
 FROM cities

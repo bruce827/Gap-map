@@ -305,8 +305,8 @@ model TangpingCity {
   
   // 基础指标
   isFocus       Boolean  @default(false)  // 是否重点关注
-  tangpingScore Float?                    // 躺平指数 (0-100)
-  rank          Int?                      // 躺平排名
+  tangpingScore Float?                    // 躺平指数 (0-100)（Phase 2，非MVP）
+  rank          Int?                      // 躺平排名（Phase 2，非MVP）
   
   // 城市描述与标签
   description   String?                   // 城市描述/躺平亮点

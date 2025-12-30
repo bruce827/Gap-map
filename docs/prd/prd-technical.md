@@ -855,14 +855,14 @@ async function scrapeWithGPT4Vision(url, prompt) {
 │                  API服务层                        │
 │   SvelteKit API Routes (Node.js)                 │
 │   • /api/cities - 城市CRUD                       │
-│   • /api/weather - 天气数据代理                  │
+│   • /api/weather - 天气数据代理（Phase 2，非MVP） │
 │   • /api/scraper - 爬虫触发                      │
 └─────────────────────────────────────────────────┘
                       ↕
 ┌─────────────────────────────────────────────────┐
 │                  数据采集层                       │
 │   Playwright爬虫 + AI识别                        │
-│   • weather.js - 天气爬虫                        │
+│   • weather.js - 天气爬虫（Phase 2，非MVP）       │
 │   • xiaohongshu.js - 小红书爬虫                  │
 │   • weibo.js - 微博爬虫                          │
 │   • ai-scraper.js - AI识别通用爬虫               │
@@ -872,7 +872,7 @@ async function scrapeWithGPT4Vision(url, prompt) {
 │                  数据存储层                       │
 │   SQLite(初期) / PostgreSQL(扩展)                │
 │   • cities表 - 城市基础信息                       │
-│   • weather表 - 实时天气                         │
+│   • weather表 - 实时天气（Phase 2，非MVP）        │
 │   • social_notes表 - 社交媒体评价                │
 │   • scraper_logs表 - 爬虫日志                    │
 └─────────────────────────────────────────────────┘
@@ -985,7 +985,7 @@ slow-city-explorer/
 ├── scrapers/                   # 爬虫脚本
 │   ├── index.js                # 爬虫主入口
 │   ├── scheduler.js            # 定时任务调度
-│   ├── weather.js              # 天气爬虫
+│   ├── weather.js              # 天气爬虫（Phase 2，非MVP）
 │   ├── xiaohongshu.js          # 小红书爬虫
 │   ├── weibo.js                # 微博爬虫
 │   ├── housing.js              # 房价爬虫
@@ -1119,11 +1119,11 @@ slow-city-explorer/
 
 ### Phase 3: 实时数据接入 (第3周)
 
-**目标:** 接入天气API和新闻数据
+**目标:** 接入天气API和新闻数据（Phase 2，非MVP）
 
 **任务清单:**
-- [x] 注册和风天气API
-- [x] 创建天气数据代理API
+- [ ] 注册和风天气API
+- [ ] 创建天气数据代理API
   ```typescript
   // src/routes/api/weather/[city]/+server.ts
   export async function GET({ params }) {
@@ -1132,9 +1132,9 @@ slow-city-explorer/
     return json(weather);
   }
   ```
-- [x] 前端展示天气组件
-- [x] 创建新闻爬虫脚本(百度新闻)
-- [x] 实现定时任务
+- [ ] 前端展示天气组件
+- [ ] 创建新闻爬虫脚本(百度新闻)
+- [ ] 实现定时任务
   ```javascript
   // scrapers/scheduler.js
   cron.schedule('0 * * * *', updateWeather);  // 每小时
@@ -1324,7 +1324,7 @@ const prompt = `
 请分析这张网页截图,提取其中的数据。
 
 ## 数据格式要求:
-严格按照以下JSON格式返回,不要添加任何解释文字:
+严格按照以下JSON格式返回,不要添加任何解释文字：
 
 \`\`\`json
 {
@@ -1343,9 +1343,9 @@ const prompt = `
 1. field1为字符串类型
 2. field2为数字类型,如果显示"1.2w",转换为12000
 3. field3为布尔类型
-4. 如果某字段无法识别,设为null
+4. 如果某个字段看不清,设为null
 
-请开始分析截图:
+请开始分析截图：
 `;
 ```
 
@@ -1428,7 +1428,7 @@ vercel --prod
 ```
 
 **2. 环境变量配置:**
-在Vercel Dashboard设置:
+在Vercel Dashboard设置：
 ```
 DATABASE_URL=your_database_connection_string
 AMAP_KEY=your_amap_key
@@ -1565,9 +1565,9 @@ jobs:
 - [ ] 测试数据增删改查
 
 **第3周:**
-- [ ] 接入天气API
-- [ ] 完成新闻爬虫
-- [ ] 设置定时任务
+- [ ] （Phase 2，非MVP）接入天气API
+- [ ] （Phase 2，非MVP）完成新闻爬虫
+- [ ] （Phase 2，非MVP）设置定时任务
 
 **第4周:**
 - [ ] 开发房价爬虫

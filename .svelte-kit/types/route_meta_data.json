@@ -1,0 +1,16 @@
+{
+	"/(app)": [],
+	"/": [],
+	"/admin": [],
+	"/admin/cities": [],
+	"/api/cities": [
+		"src/routes/api/cities/+server.ts"
+	],
+	"/api/cities/[id]": [
+		"src/routes/api/cities/[id]/+server.ts"
+	],
+	"/api/health": [
+		"src/routes/api/health/+server.ts"
+	],
+	"/(app)/city/[id]": []
+}

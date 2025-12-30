@@ -17,7 +17,7 @@
   let mapContainer;
   let scene;
 
-  // 示例城市数据（躺平指数）
+  // 示例城市数据（展示用字段：MVP 可改为任意单指标驱动可视化；综合躺平指数/排名放到 Phase 2）
   const cityData = [
     { name: '成都', lng: 104.07, lat: 30.67, tangpingIndex: 9.2, population: 2094 },
     { name: '大理', lng: 100.23, lat: 25.60, tangpingIndex: 9.5, population: 333 },
