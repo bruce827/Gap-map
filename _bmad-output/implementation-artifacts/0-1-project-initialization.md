@@ -1,6 +1,6 @@
 # Story 0.1: 项目初始化（SvelteKit 主应用 + Prisma 数据层 + Admin 路由骨架）（MVP/Phase 2 前置）
 
-Status: review
+Status: done
 
 ## Story
 
@@ -18,7 +18,7 @@ so that 后续 1-x（地图/详情/筛选/对比）与 2-x（管理端/任务）
 4. API Routes 骨架可用：
    - 存在 SvelteKit API 路由目录结构（例如 `src/routes/api/...`）
    - 至少提供一个“健康检查”接口（用于后续 Story 复用）
-   - 预置 `/api/cities` 路由骨架位置（本 Story 只返回明确占位响应，例如 `501 Not Implemented`；具体查询逻辑留给后续 Story）
+   - 预置 `/api/cities` 路由骨架位置（本 Story 可为明确占位响应；后续 Story（例如 1-1）可替换为真实查询实现）
 5. Admin（A1 同项目）骨架可用：
    - 预置 `/admin` 路由组（页面可打开），但不要求在本 Story 完成 CRUD 功能
    - 预置 `/admin` 的 layout 壳（后续挂鉴权/导航）与 `/admin/cities` 子路由骨架位置
@@ -48,7 +48,7 @@ so that 后续 1-x（地图/详情/筛选/对比）与 2-x（管理端/任务）
 
 - [x] Task 5：预置 SvelteKit API Routes 结构（AC: 4）
   - [x] 创建 `src/routes/api/health/+server.ts`（或等价）返回版本/时间戳
-  - [x] 预置 `src/routes/api/cities/+server.ts`（本 Story 仅返回明确占位响应，例如 `501 Not Implemented` + JSON `{ error: 'not_implemented' }`；具体实现放到后续 Story）
+  - [x] 预置 `src/routes/api/cities/+server.ts`（本 Story 可为明确占位响应；后续 Story 可替换为真实实现）
   - [x] 预置 `src/routes/api/cities/[id]/+server.ts`（本 Story 仅占位；具体实现放到后续 Story）
 
 - [x] Task 6：预置 `/admin` 路由骨架（AC: 5）
@@ -86,6 +86,21 @@ so that 后续 1-x（地图/详情/筛选/对比）与 2-x（管理端/任务）
 - `data/gapmap.db`：继续作为本地开发默认 DB
 - Phase 2+ 预留：`scrapers/`（爬虫与定时任务）、`static/screenshots/`（截图存储）、`tests/`
 
+### Commands / Env / Minimal verification (reproducible)
+
+- 环境变量（根目录 `.env`）：
+  - `DATABASE_URL="file:./data/gapmap.db"`
+- 启动命令：
+  - `pnpm install`
+  - `pnpm prepare`
+  - `pnpm dev`
+- 最小验证路径：
+  - `GET http://127.0.0.1:5173/` 首页可打开（Flowbite Svelte 组件可渲染）
+  - `GET http://127.0.0.1:5173/admin` 管理端占位页可打开
+  - `GET http://127.0.0.1:5173/admin/cities` 管理端子路由占位页可打开
+  - `GET http://127.0.0.1:5173/api/health` 返回 `{"ok":true,"version":"...","ts":"...","dbOk":true,"cityCount":...}`
+  - `GET http://127.0.0.1:5173/api/cities` 本 Story 可为占位或真实实现（后续 Story 允许替换）
+
 ### References
 
 - [Source: docs/product_brief.md#核心技术栈]
@@ -113,8 +128,8 @@ Cascade
 - `GET http://127.0.0.1:5173/` 首页可打开，Flowbite Svelte 按钮渲染正常
 - `GET http://127.0.0.1:5173/admin` 管理端占位页可打开
 - `GET http://127.0.0.1:5173/admin/cities` 管理端子路由占位页可打开
-- `GET http://127.0.0.1:5173/api/health` 返回 `{"ok":true,"ts":"...","dbOk":true,"cityCount":...}`
-- `GET http://127.0.0.1:5173/api/cities` 返回 `501` 与 `{"error":"not_implemented"}`
+- `GET http://127.0.0.1:5173/api/health` 返回 `{"ok":true,"version":"...","ts":"...","dbOk":true,"cityCount":...}`
+- `GET http://127.0.0.1:5173/api/cities` 本 Story 可为占位或真实实现（后续 Story 允许替换）
 
 ### Files Changed / Added
 
@@ -140,3 +155,12 @@ Cascade
 - `scrapers/.gitkeep`
 - `static/screenshots/.gitkeep`
 - `tests/.gitkeep`
+
+## Senior Developer Review (AI)
+
+- Reviewer: bruce on 2025-12-30
+- 结论：Changes Applied（修正文档口径以兼容后续 Story 替换 `/api/cities`；补齐 Dev Notes 的可复现信息；/api/health 返回包含 version；app.html 语言标记对齐为 zh-CN）。
+
+## Change Log
+
+- 2025-12-30: CR auto-fix（/api/health version + app.html lang + story sync）

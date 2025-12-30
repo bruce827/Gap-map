@@ -5,7 +5,7 @@ tracking_system: file-system
 story_location: "/Users/maylis/Desktop/github上的项目/Gap-map/_bmad-output/implementation-artifacts"
 
 development_status:
-  0-1-project-initialization: review
+  0-1-project-initialization: done
   epic-1: in-progress
   1-1-data-layer-city-list: done
   1-2-map-city-points: ready-for-dev
