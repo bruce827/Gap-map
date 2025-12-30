@@ -2,7 +2,8 @@
   import { onMount } from 'svelte';
  
   import { loadAmapScript } from '$lib/amap-loader.js';
-  import { fetchCities } from '$lib/cities.js';
+  import { normalizeCities } from '$lib/cities.js';
+  import { citiesAPI } from '$lib/api/cities';
   import { createCityMarkers } from '$lib/amap.js';
  
   let mapEl: HTMLDivElement | null = null;
@@ -49,7 +50,7 @@
       });
  
       loading = '正在获取城市数据...';
-      const cities = await fetchCities();
+      const cities = normalizeCities(await citiesAPI().list());
       cityCount = cities.length;
 
       if (cities.length < 10) {

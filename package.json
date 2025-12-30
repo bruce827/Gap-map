@@ -11,7 +11,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "prepare": "svelte-kit sync",
     "test": "node --test",
     "import": "tsx scripts/import-csv.ts",
