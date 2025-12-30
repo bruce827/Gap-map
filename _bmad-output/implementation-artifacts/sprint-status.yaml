@@ -8,7 +8,7 @@ development_status:
   0-1-project-initialization: done
   epic-1: in-progress
   1-1-data-layer-city-list: done
-  1-2-map-city-points: ready-for-dev
+  1-2-map-city-points: done
   1-3-city-details-dimensions: ready-for-dev
   1-4-filter-sort-single-metric: ready-for-dev
   1-5-compare-cities: ready-for-dev

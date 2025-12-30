@@ -5,6 +5,7 @@ node_modules
 
 # Generated files
 /generated/prisma
+/.svelte-kit/
 
 # macOS
 .DS_Store

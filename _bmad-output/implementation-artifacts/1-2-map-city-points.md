@@ -1,6 +1,6 @@
 # Story 1.2: 地图点位渲染 + 点击打开详情容器（MVP）
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -31,28 +31,28 @@ so that 我可以快速浏览城市分维度信息并进入后续对比/筛选�
 
 ## Tasks / Subtasks
 
-- [ ] Task 1：确认地图 Key 配置可用（AC: 1, 4）
-  - [ ] 主线：通过 SvelteKit API `GET /api/config` 获取 `amapKey` / `amapSecurityCode`
-  - [ ] `GET /api/config` 建议由 `src/routes/api/config/+server.ts` 实现，仅从服务端环境变量读取并返回（避免在前端代码里硬编码 key）
-  - [ ] AMap JS API 2.0 脚本加载成功（失败时提示用户检查根目录 `.env`）
+- [x] Task 1：确认地图 Key 配置可用（AC: 1, 4）
+  - [x] 主线：通过 SvelteKit API `GET /api/config` 获取 `amapKey` / `amapSecurityCode`
+  - [x] `GET /api/config` 建议由 `src/routes/api/config/+server.ts` 实现，仅从服务端环境变量读取并返回（避免在前端代码里硬编码 key）
+  - [x] AMap JS API 2.0 脚本加载成功（失败时提示用户检查根目录 `.env`）
 
-- [ ] Task 2：城市列表拉取与点位渲染（AC: 2, 4）
-  - [ ] 调用 `GET /api/cities` 并校验返回为数组
-  - [ ] 过滤无效经纬度城市（建议 `Number.isFinite(Number(city.lat)) && Number.isFinite(Number(city.lng))`）
-  - [ ] 为每个城市创建 Marker（或 L7 PointLayer，若你走 SvelteKit/L7 路线）
+- [x] Task 2：城市列表拉取与点位渲染（AC: 2, 4）
+  - [x] 调用 `GET /api/cities` 并校验返回为数组
+  - [x] 过滤无效经纬度城市（建议 `Number.isFinite(Number(city.lat)) && Number.isFinite(Number(city.lng))`）
+  - [x] 为每个城市创建 Marker（或 L7 PointLayer，若你走 SvelteKit/L7 路线）
 
-- [ ] Task 3：点击打开详情容器（AC: 3）
-  - [ ] click 事件绑定到 marker
-  - [ ] 至少展示：城市名（可附省份/房价/舒适天数等静态字段）
+- [x] Task 3：点击打开详情容器（AC: 3）
+  - [x] click 事件绑定到 marker
+  - [x] 至少展示：城市名（可附省份/房价/舒适天数等静态字段）
 
-- [ ] Task 4：移除/禁用动态数据调用（AC: 5）
-  - [ ] 不新增天气/新闻请求
-  - [ ] 若沿用 demo 现有实现，移除/禁用 `AMap.Weather()` 与 `weather.getForecast(...)` 相关调用（避免与“动态数据 Phase 2”口径冲突）
-  - [ ] 自测时确认浏览器 Network 中无天气相关请求
+- [x] Task 4：移除/禁用动态数据调用（AC: 5）
+  - [x] 不新增天气/新闻请求
+  - [x] 若沿用 demo 现有实现，移除/禁用 `AMap.Weather()` 与 `weather.getForecast(...)` 相关调用（避免与“动态数据 Phase 2”口径冲突）
+  - [x] 自测时确认浏览器 Network 中无天气相关请求
 
-- [ ] Task 5：最小自测记录（AC: 1-4）
-  - [ ] 截图：地图加载 + 点位渲染
-  - [ ] 截图：点击点位打开详情容器
+- [x] Task 5：最小自测记录（AC: 1-4）
+  - [x] 截图：地图加载 + 点位渲染
+  - [x] 截图：点击点位打开详情容器
 
 ## Dev Notes
 
@@ -96,14 +96,51 @@ Cascade
 
 ### Debug Log References
 
+- `npm test`
+
 ### Completion Notes List
+
+- ✅ 完成 Task 1：新增 `GET /api/config`（仅读取服务端环境变量），并新增集成测试 `tests/api-config.test.js` 验证返回 `amapKey/amapSecurityCode`。
+- ✅ 完成 Task 2：地图页拉取 `/api/cities` 并过滤无效经纬度后创建 Marker；新增纯函数测试覆盖数据过滤、Marker 构造与 AMap 脚本 URL（默认不包含 Weather 插件）。
+- ✅ 完成 Task 3：marker 点击后在页面展示“已选择城市”容器并显示城市名。
+- ✅ 完成 Task 4：新增静态扫描测试，确保 `src/` 中不存在 `AMap.Weather` / `getForecast` 动态天气调用。
+- ✅ 完成 Task 5：截图已保存到 `static/screenshots/`。
 
 ### File List
 
 - src/routes/(app)/+page.svelte (primary)
+- src/lib/amap-loader.js
+- src/lib/amap.js
+- src/lib/cities.js
 - src/routes/api/config/+server.ts (config API; 本 Story 若需要才实现)
 - src/routes/api/cities/+server.ts (cities API)
+- tests/api-config.test.js
+- tests/amap-loader.test.js
+- tests/amap-lib.test.js
+- tests/cities-lib.test.js
+- tests/no-dynamic-data.test.js
+- static/screenshots/screencapture-localhost-5173-2025-12-30-16_31_49.png
+- static/screenshots/screencapture-localhost-5173-2025-12-30-16_36_00.png
+- .gitignore
 - demo/index.html (reference)
 - demo/server.js (reference)
 - docs/prd/prd-product.md
 - docs/prd/prd-map-visual.md
+
+### Change Log
+
+- 2025-12-30: Task 1 完成（新增 `/api/config` + 集成测试）
+- 2025-12-30: Task 2 完成（城市拉取/过滤/Marker 渲染 + 单测）
+- 2025-12-30: Task 3/4 完成（marker 点击详情容器 + 禁用动态数据测试兜底）
+- 2025-12-30: Task 5 完成（最小自测截图）
+- 2025-12-30: Senior Developer Review (AI) - fixed HIGH+MED issues and marked done
+
+## Senior Developer Review (AI)
+
+- Reviewer: bruce on 2025-12-30
+- Outcome: Changes Applied
+- Fixed:
+  - HIGH: `/api/config` missing-key now returns `500` + readable error; added negative test.
+  - HIGH: `.svelte-kit/` added to `.gitignore` to avoid generated-file churn.
+  - MED: show visible warning when valid city points < 10.
+  - MED: avoid silent click failure by throwing when `marker.on` is missing while click handler is required; added negative test.

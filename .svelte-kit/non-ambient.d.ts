@@ -27,7 +27,7 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/(app)" | "/" | "/admin" | "/admin/cities" | "/api" | "/api/cities" | "/api/cities/[id]" | "/api/health" | "/(app)/city" | "/(app)/city/[id]";
+		RouteId(): "/(app)" | "/" | "/admin" | "/admin/cities" | "/api" | "/api/cities" | "/api/cities/[id]" | "/api/config" | "/api/health" | "/(app)/city" | "/(app)/city/[id]";
 		RouteParams(): {
 			"/api/cities/[id]": { id: string };
 			"/(app)/city/[id]": { id: string }
@@ -40,12 +40,13 @@ declare module "$app/types" {
 			"/api": { id?: string };
 			"/api/cities": { id?: string };
 			"/api/cities/[id]": { id: string };
+			"/api/config": Record<string, never>;
 			"/api/health": Record<string, never>;
 			"/(app)/city": { id?: string };
 			"/(app)/city/[id]": { id: string }
 		};
-		Pathname(): "/" | "/admin" | "/admin/" | "/admin/cities" | "/admin/cities/" | "/api" | "/api/" | "/api/cities" | "/api/cities/" | `/api/cities/${string}` & {} | `/api/cities/${string}/` & {} | "/api/health" | "/api/health/" | "/city" | "/city/" | `/city/${string}` & {} | `/city/${string}/` & {};
+		Pathname(): "/" | "/admin" | "/admin/" | "/admin/cities" | "/admin/cities/" | "/api" | "/api/" | "/api/cities" | "/api/cities/" | `/api/cities/${string}` & {} | `/api/cities/${string}/` & {} | "/api/config" | "/api/config/" | "/api/health" | "/api/health/" | "/city" | "/city/" | `/city/${string}` & {} | `/city/${string}/` & {};
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
-		Asset(): "/screenshots/.gitkeep" | string & {};
+		Asset(): "/screenshots/.gitkeep" | "/screenshots/screencapture-localhost-5173-2025-12-30-16_31_49.png" | "/screenshots/screencapture-localhost-5173-2025-12-30-16_36_00.png" | string & {};
 	}
 }

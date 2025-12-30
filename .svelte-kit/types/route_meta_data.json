@@ -9,6 +9,9 @@
 	"/api/cities/[id]": [
 		"src/routes/api/cities/[id]/+server.ts"
 	],
+	"/api/config": [
+		"src/routes/api/config/+server.ts"
+	],
 	"/api/health": [
 		"src/routes/api/health/+server.ts"
 	],
