@@ -12,6 +12,10 @@
   import ComparePanel from '$lib/components/ComparePanel.svelte';
  
   let mapEl: HTMLDivElement | null = null;
+  let AMapRef = $state<any>(null);
+  let mapRef = $state<any>(null);
+  let geocoderRef = $state<any>(null);
+
   let loading = $state('正在加载...');
   let error = $state('');
   let cityCount = $state<number | null>(null);
@@ -32,6 +36,10 @@
   let compareCities = $state<City[]>([]);
   let showComparePanel = $state(false);
   const MAX_COMPARE_CITIES = 4;
+
+  let showPanorama = $state(false);
+  let panoramaUrl = $state('');
+  let locationMarker = $state<any>(null);
 
   async function loadCityDetail(cityId: string) {
     detailLoading = true;
@@ -106,6 +114,77 @@
   function isCityInCompare(cityId: string): boolean {
     return compareCities.some(c => c.id === cityId);
   }
+
+  function buildCityAddress(city: City): string {
+    return [city.province, city.name, city.district]
+      .map((s) => (typeof s === 'string' ? s.trim() : ''))
+      .filter(Boolean)
+      .join('');
+  }
+
+  async function geocodeAddress(address: string): Promise<{ lng: number; lat: number }> {
+    if (!geocoderRef) throw new Error('Geocoder 未就绪');
+
+    return new Promise((resolve, reject) => {
+      geocoderRef.getLocation(address, (status: string, result: any) => {
+        if (status !== 'complete') {
+          reject(new Error(`地址解析失败: ${status}`));
+          return;
+        }
+
+        const location = result?.geocodes?.[0]?.location;
+        const lng = typeof location?.getLng === 'function' ? location.getLng() : location?.lng;
+        const lat = typeof location?.getLat === 'function' ? location.getLat() : location?.lat;
+
+        if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+          reject(new Error('地址解析失败: 无有效坐标'));
+          return;
+        }
+
+        resolve({ lng, lat });
+      });
+    });
+  }
+
+  async function handleLocateCity(city: City) {
+    try {
+      if (!AMapRef || !mapRef) {
+        alert('地图未就绪');
+        return;
+      }
+
+      const address = buildCityAddress(city);
+      if (!address) {
+        alert('缺少地址信息，无法定位');
+        return;
+      }
+
+      const { lng, lat } = await geocodeAddress(address);
+      mapRef.setZoomAndCenter(14, [lng, lat]);
+
+      if (locationMarker && typeof mapRef?.remove === 'function') {
+        mapRef.remove(locationMarker);
+        locationMarker = null;
+      }
+
+      if (typeof AMapRef?.Marker === 'function') {
+        locationMarker = new AMapRef.Marker({
+          position: [lng, lat],
+          map: mapRef
+        });
+      }
+
+      panoramaUrl = `https://uri.amap.com/panorama?position=${lng},${lat}`;
+      showPanorama = true;
+    } catch (e) {
+      alert(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  function closePanorama() {
+    showPanorama = false;
+    panoramaUrl = '';
+  }
  
   onMount(async () => {
     try {
@@ -131,8 +210,9 @@
       const AMap = await loadAmapScript({
         amapKey: config.amapKey,
         amapSecurityCode: config.amapSecurityCode,
-        plugins: []
+        plugins: ['AMap.Geocoder']
       });
+      AMapRef = AMap;
  
       if (!mapEl) throw new Error('地图容器未就绪');
  
@@ -142,6 +222,8 @@
         center: [108.940174, 34.341568],
         viewMode: '2D'
       });
+      mapRef = map;
+      geocoderRef = new AMap.Geocoder();
  
       loading = '正在获取城市数据...';
       const rawCities = await citiesAPI().list();
@@ -239,6 +321,7 @@
     loading={detailLoading}
     error={detailError}
     onclose={closeDetailCard}
+    onlocate={handleLocateCity}
     onaddcompare={handleAddCompare}
     isInCompare={selectedCity ? isCityInCompare(selectedCity.id) : false}
   />
@@ -265,3 +348,29 @@
     onclose={handleCloseCompare}
   />
 {/if}
+
+{#if showPanorama}
+  <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+    <div class="relative h-[70vh] w-[90vw] overflow-hidden rounded-xl bg-white shadow-2xl">
+      <button
+        class="absolute right-2 top-2 z-10 rounded bg-white/90 px-3 py-1 text-sm text-gray-700 shadow hover:bg-white"
+        onclick={closePanorama}
+      >
+        关闭
+      </button>
+      <iframe class="h-full w-full" src={panoramaUrl} title="全景地图"></iframe>
+    </div>
+  </div>
+{/if}
+
+<style lang="css">
+  /* 隐藏高德地图logo */
+  :global(a.amap-logo) {
+    visibility: hidden !important;
+  }
+  
+  /* 隐藏高德地图版权信息 */
+  :global(div.amap-copyright) {
+    visibility: hidden !important;
+  }
+</style>

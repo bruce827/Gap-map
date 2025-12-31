@@ -6,11 +6,12 @@
     loading?: boolean;
     error?: string;
     onclose?: () => void;
+    onlocate?: (city: City) => void;
     onaddcompare?: (city: City) => void;
     isInCompare?: boolean;
   }
 
-  let { city, loading = false, error = '', onclose, onaddcompare, isInCompare = false }: Props = $props();
+  let { city, loading = false, error = '', onclose, onlocate, onaddcompare, isInCompare = false }: Props = $props();
 
   let minimized = $state(false);
   let position = $state({ x: 20, y: 80 });
@@ -117,14 +118,27 @@
           {:else if city}
             <div class="mb-3 border-b border-gray-100 pb-3">
               <h3 class="text-lg font-bold text-gray-900">{city.name}</h3>
-              {#if city.province}
-                <p class="text-sm text-gray-500">
-                  {city.province}{city.district ? ` · ${city.district}` : ''}
-                </p>
-              {/if}
+              <div class="flex items-center justify-between gap-2">
+                {#if city.province}
+                  <p class="text-sm text-gray-500">
+                    {city.province}{city.district ? ` · ${city.district}` : ''}
+                  </p>
+                {/if}
+                <button
+                  onclick={() => city && onlocate?.(city)}
+                  class="rounded px-2 py-1 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50"
+                  title="定位并查看全景"
+                >
+                  定位
+                </button>
+              </div>
             </div>
 
             <div class="space-y-2 text-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-gray-500">区县</span>
+                <span class="font-medium text-gray-900">{formatValue(city.district)}</span>
+              </div>
               <div class="flex items-center justify-between">
                 <span class="text-gray-500">房价</span>
                 <span class="font-medium text-gray-900">{formatValue(city.price, ' 元/㎡')}</span>
@@ -136,6 +150,10 @@
               <div class="flex items-center justify-between">
                 <span class="text-gray-500">绿化率</span>
                 <span class="font-medium text-gray-900">{formatValue(city.green_rate, '%')}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-500">排名</span>
+                <span class="font-medium text-gray-900">{formatValue(city.rank)}</span>
               </div>
             </div>
 
