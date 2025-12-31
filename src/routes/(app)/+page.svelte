@@ -5,13 +5,107 @@
   import { normalizeCities } from '$lib/cities.js';
   import { citiesAPI } from '$lib/api/cities';
   import { createCityMarkers } from '$lib/amap.js';
+  import type { City } from '$lib/types';
+  import CityDetailCard from '$lib/components/CityDetailCard.svelte';
+  import FilterPanel from '$lib/components/FilterPanel.svelte';
+  import CompareBar from '$lib/components/CompareBar.svelte';
+  import ComparePanel from '$lib/components/ComparePanel.svelte';
  
   let mapEl: HTMLDivElement | null = null;
-  let loading = '正在加载...';
-  let error = '';
-  let cityCount: number | null = null;
-  let selectedCityName: string | null = null;
-  let warning = '';
+  let loading = $state('正在加载...');
+  let error = $state('');
+  let cityCount = $state<number | null>(null);
+  let selectedCityName = $state<string | null>(null);
+  let warning = $state('');
+  
+  let showDetailCard = $state(false);
+  let detailLoading = $state(false);
+  let detailError = $state('');
+  let selectedCity = $state<City | null>(null);
+
+  let allCities = $state<City[]>([]);
+  let filteredCities = $state<City[]>([]);
+  let provinces = $state<string[]>([]);
+  let markers = $state<any[]>([]);
+  let markerMap = $state<Map<string, any>>(new Map());
+
+  let compareCities = $state<City[]>([]);
+  let showComparePanel = $state(false);
+  const MAX_COMPARE_CITIES = 4;
+
+  async function loadCityDetail(cityId: string) {
+    detailLoading = true;
+    detailError = '';
+    showDetailCard = true;
+    
+    try {
+      const city = await citiesAPI().getById(cityId);
+      if (!city) {
+        detailError = '城市不存在';
+        selectedCity = null;
+      } else {
+        selectedCity = city;
+      }
+    } catch (e) {
+      detailError = e instanceof Error ? e.message : '加载失败';
+      selectedCity = null;
+    } finally {
+      detailLoading = false;
+    }
+  }
+
+  function closeDetailCard() {
+    showDetailCard = false;
+    selectedCity = null;
+    detailError = '';
+  }
+
+  function handleFilter(filtered: City[]) {
+    filteredCities = filtered;
+    cityCount = filtered.length;
+    
+    const filteredIds = new Set(filtered.map(c => c.id));
+    markerMap.forEach((marker, id) => {
+      if (filteredIds.has(id)) {
+        marker.show();
+      } else {
+        marker.hide();
+      }
+    });
+  }
+
+  function handleSort(sorted: City[]) {
+    filteredCities = sorted;
+  }
+
+  function handleAddCompare(city: City) {
+    if (compareCities.length >= MAX_COMPARE_CITIES) {
+      alert(`最多只能对比 ${MAX_COMPARE_CITIES} 个城市`);
+      return;
+    }
+    if (compareCities.some(c => c.id === city.id)) {
+      return;
+    }
+    compareCities = [...compareCities, city];
+  }
+
+  function handleRemoveCompare(cityId: string) {
+    compareCities = compareCities.filter(c => c.id !== cityId);
+  }
+
+  function handleOpenCompare() {
+    if (compareCities.length >= 2) {
+      showComparePanel = true;
+    }
+  }
+
+  function handleCloseCompare() {
+    showComparePanel = false;
+  }
+
+  function isCityInCompare(cityId: string): boolean {
+    return compareCities.some(c => c.id === cityId);
+  }
  
   onMount(async () => {
     try {
@@ -50,25 +144,50 @@
       });
  
       loading = '正在获取城市数据...';
-      const cities = normalizeCities(await citiesAPI().list());
-      cityCount = cities.length;
+      const rawCities = await citiesAPI().list();
+      const validCities = rawCities.filter(c => 
+        c.id && c.name && 
+        typeof c.lat === 'number' && Number.isFinite(c.lat) &&
+        typeof c.lng === 'number' && Number.isFinite(c.lng)
+      );
+      
+      allCities = validCities;
+      filteredCities = validCities;
+      cityCount = validCities.length;
 
-      if (cities.length < 10) {
-        warning = `有效城市点位不足 10（当前：${cities.length}）。请检查 /api/cities 数据质量与经纬度字段。`;
+      const uniqueProvinces = [...new Set(validCities.map(c => c.province).filter((p): p is string => p !== null))].sort();
+      provinces = uniqueProvinces;
+
+      if (validCities.length < 10) {
+        warning = `有效城市点位不足 10（当前：${validCities.length}）。请检查 /api/cities 数据质量与经纬度字段。`;
       }
  
-      if (cities.length === 0) {
+      if (validCities.length === 0) {
         throw new Error('城市列表为空');
       }
- 
-      createCityMarkers({
+
+      const markerCities = normalizeCities(validCities);
+      const createdMarkers = createCityMarkers({
         AMap,
         map,
-        cities,
+        cities: markerCities,
         onClick: (payload: any) => {
           selectedCityName = payload?.city?.name ?? null;
+          const cityId = payload?.city?.id;
+          if (cityId) {
+            loadCityDetail(cityId);
+          }
         }
       });
+
+      markers = createdMarkers;
+      const newMarkerMap = new Map<string, any>();
+      validCities.forEach((city: City, index: number) => {
+        if (createdMarkers[index]) {
+          newMarkerMap.set(city.id, createdMarkers[index]);
+        }
+      });
+      markerMap = newMarkerMap;
  
       loading = '';
     } catch (e) {
@@ -113,3 +232,36 @@
  
    <div bind:this={mapEl} class="h-full w-full rounded border"></div>
  </div>
+
+{#if showDetailCard}
+  <CityDetailCard
+    city={selectedCity}
+    loading={detailLoading}
+    error={detailError}
+    onclose={closeDetailCard}
+    onaddcompare={handleAddCompare}
+    isInCompare={selectedCity ? isCityInCompare(selectedCity.id) : false}
+  />
+{/if}
+
+{#if allCities.length > 0}
+  <FilterPanel
+    cities={allCities}
+    {provinces}
+    onfilter={handleFilter}
+    onsort={handleSort}
+  />
+{/if}
+
+<CompareBar
+  cities={compareCities}
+  onremove={handleRemoveCompare}
+  oncompare={handleOpenCompare}
+/>
+
+{#if showComparePanel && compareCities.length >= 2}
+  <ComparePanel
+    cities={compareCities}
+    onclose={handleCloseCompare}
+  />
+{/if}

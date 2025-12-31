@@ -128,6 +128,131 @@ npm run import
 npx tsx scripts/update-city-geo.ts
 ```
 
+## 数据维护（CRUD）
+
+本项目采用脚本维护方式管理城市数据，支持以下操作：
+
+### 查询城市列表
+
+```bash
+# 列出所有城市及其当前数据
+npm run update:city -- --list
+```
+
+输出示例：
+
+```
+城市名称        房价        舒适天数    绿化率
+------------------------------------------------------------
+鹤岗市          2300        126         41.5
+乳山市          3500        185         38.2
+...
+```
+
+### 更新城市数据
+
+```bash
+# 更新房价（元/㎡）
+npm run update:city -- --city "鹤岗" --field price --value 2500
+
+# 更新舒适天数（天/年）
+npm run update:city -- --city "乳山" --field comfort_days --value 200
+
+# 更新绿化率（%）
+npm run update:city -- --city "大理" --field green_rate --value 45.5
+```
+
+**支持的字段**：
+
+| 字段 | 说明 | 类型 | 示例值 |
+|------|------|------|--------|
+| `price` | 房价（元/㎡） | 数值 | 2500 |
+| `comfort_days` | 舒适天数（天/年） | 数值 | 180 |
+| `green_rate` | 绿化率（%） | 数值 | 42.5 |
+| `district` | 区县名称 | 字符串 | "兴安区/东山区" |
+| `rank` | 排名 | 数值 | 1 |
+| `lat` | 纬度 | 数值 | 47.35 |
+| `lng` | 经度 | 数值 | 130.30 |
+
+### 批量导入/更新
+
+如需批量更新，可修改 CSV 文件后重新导入：
+
+```bash
+# 1. 编辑 data/cities_complete.csv
+# 2. 重新导入
+npm run import
+```
+
+### 数据修复
+
+```bash
+# 运行数据修复脚本（修复价格异常、字段偏移等）
+npx tsx scripts/fix-data.ts
+```
+
+### 验证更新
+
+更新后可通过以下方式验证：
+
+```bash
+# 方式 1：访问 API
+curl http://localhost:5173/api/cities | grep "鹤岗"
+
+# 方式 2：使用 Prisma Studio
+npm run prisma:studio
+```
+
+### 何时需要重建视图
+
+- **需要重建**：修改了 `prisma/views.sql`（新增列、改列名、改计算逻辑）
+- **不需要重建**：仅更新表数据（使用上述脚本或重新导入）
+
+```bash
+# 重建视图（仅在修改 views.sql 后执行）
+npx prisma db execute --file prisma/views.sql
+```
+
+### AI 辅助数据维护
+
+你可以将以下提示词发送给 AI 助手，让它帮你执行数据维护操作：
+
+```
+你是 Gap-map 项目的数据维护助手。请根据用户的自然语言请求，生成并执行相应的数据更新命令。
+
+可用命令：
+- 查询所有城市：npm run update:city -- --list
+- 更新城市数据：npm run update:city -- --city "<城市名>" --field <字段> --value <值>
+
+支持的字段：
+| 字段 | 说明 | 类型 | 示例 |
+|------|------|------|------|
+| price | 房价（元/㎡） | 数值 | 2500 |
+| comfort_days | 舒适天数（天/年） | 数值 | 180 |
+| green_rate | 绿化率（%） | 数值 | 42.5 |
+| district | 区县名称 | 字符串 | "兴安区/东山区" |
+| rank | 排名 | 数值 | 1 |
+| lat | 纬度 | 数值 | 47.35 |
+| lng | 经度 | 数值 | 130.30 |
+
+示例请求与响应：
+- 用户："把鹤岗的房价改成2500"
+  命令：npm run update:city -- --city "鹤岗" --field price --value 2500
+
+- 用户："更新乳山市的舒适天数为200天"
+  命令：npm run update:city -- --city "乳山" --field comfort_days --value 200
+
+- 用户："鹤岗的区县改成兴安区"
+  命令：npm run update:city -- --city "鹤岗" --field district --value "兴安区"
+
+- 用户："列出所有城市"
+  命令：npm run update:city -- --list
+
+请直接执行命令，不需要额外确认。执行后告诉用户结果。
+```
+
+**使用方式**：将上述提示词复制给 AI 助手（如 Cascade、ChatGPT 等），然后用自然语言描述你想要的数据操作即可。
+
 ### 运行演示
 
 ```bash
