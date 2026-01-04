@@ -63,7 +63,6 @@ declare module '$env/static/private' {
 	export const NVM_DIR: string;
 	export const NVM_INC: string;
 	export const OLDPWD: string;
-	export const ORIGINAL_XDG_CURRENT_DESKTOP: string;
 	export const OSLogRateLimit: string;
 	export const PATH: string;
 	export const PHPSTORM_VM_OPTIONS: string;
@@ -97,6 +96,7 @@ declare module '$env/static/private' {
 	export const __CFBundleIdentifier: string;
 	export const __CF_USER_TEXT_ENCODING: string;
 	export const POSTHOG_API_KEY: string;
+	export const APPLICATION_INSIGHTS_NO_STATSBEAT: string;
 	export const ELECTRON_NO_ASAR: string;
 	export const NODE_ENV: string;
 }
@@ -165,7 +165,6 @@ declare module '$env/dynamic/private' {
 		NVM_DIR: string;
 		NVM_INC: string;
 		OLDPWD: string;
-		ORIGINAL_XDG_CURRENT_DESKTOP: string;
 		OSLogRateLimit: string;
 		PATH: string;
 		PHPSTORM_VM_OPTIONS: string;
@@ -199,6 +198,7 @@ declare module '$env/dynamic/private' {
 		__CFBundleIdentifier: string;
 		__CF_USER_TEXT_ENCODING: string;
 		POSTHOG_API_KEY: string;
+		APPLICATION_INSIGHTS_NO_STATSBEAT: string;
 		ELECTRON_NO_ASAR: string;
 		NODE_ENV: string;
 		[key: `PUBLIC_${string}`]: undefined;

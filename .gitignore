@@ -32,3 +32,4 @@ build/
 
 # Large data files
 data/*.csv
+.svelte-kit/generated/server/internal.js
