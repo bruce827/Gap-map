@@ -5,6 +5,16 @@
 
   Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
+  /**
+   * 对比维度配置接口
+   * @interface DimensionConfig
+   * @property {keyof City} key - 对应的城市数据字段
+   * @property {string} label - 维度显示标签
+   * @property {string} unit - 数值单位
+   * @property {boolean} reverse - 是否反向显示（true时数值越大在雷达图越小）
+   * @property {number} min - 数值下限
+   * @property {number} max - 数值上限
+   */
   interface DimensionConfig {
     key: keyof City;
     label: string;
@@ -14,6 +24,12 @@
     max: number;
   }
 
+  /**
+   * 对比面板组件的属性接口
+   * @interface Props
+   * @property {City[]} cities - 待对比的城市列表
+   * @property {() => void} onclose - 关闭对比面板的回调函数
+   */
   interface Props {
     cities: City[];
     onclose: () => void;
@@ -27,6 +43,10 @@
     { key: 'green_rate', label: '绿化率', unit: '%', reverse: false, min: 0, max: 60 },
   ];
 
+  /**
+   * 城市颜色配置数组，用于雷达图中各城市的颜色展示
+   * @type {Array<{bg: string, border: string}>}
+   */
   const CITY_COLORS = [
     { bg: 'rgba(59, 130, 246, 0.2)', border: 'rgb(59, 130, 246)' },
     { bg: 'rgba(16, 185, 129, 0.2)', border: 'rgb(16, 185, 129)' },
@@ -34,15 +54,52 @@
     { bg: 'rgba(139, 92, 246, 0.2)', border: 'rgb(139, 92, 246)' },
   ];
 
+  /**
+   * 当前选中的维度列表
+   * @type {string[]}
+   */
   let selectedDimensions = $state<string[]>(['price', 'comfort_days', 'green_rate']);
+  
+  /**
+   * Canvas 画布元素引用，用于绘制雷达图
+   * @type {HTMLCanvasElement | null}
+   */
   let canvasEl: HTMLCanvasElement | null = $state(null);
+  
+  /**
+   * Chart.js 实例引用
+   * @type {Chart | null}
+   */
   let chart: Chart | null = null;
 
+  /**
+   * 是否最小化面板
+   * @type {boolean}
+   */
   let minimized = $state(false);
+  
+  /**
+   * 面板位置坐标 {x: 水平距离左边界, y: 垂直距离顶部}
+   * @type {{x: number, y: number}}
+   */
   let position = $state({ x: 350, y: 80 });
+  
+  /**
+   * 是否正在拖拽面板
+   * @type {boolean}
+   */
   let dragging = $state(false);
+  
+  /**
+   * 拖拽时的偏移量
+   * @type {{x: number, y: number}}
+   */
   let dragOffset = $state({ x: 0, y: 0 });
 
+  /**
+   * 处理鼠标按下事件，启动拖拽
+   * @param {MouseEvent} e - 鼠标事件对象
+   */
   function handleMouseDown(e: MouseEvent) {
     if ((e.target as HTMLElement).closest('button, input, label')) return;
     dragging = true;
@@ -52,6 +109,10 @@
     };
   }
 
+  /**
+   * 处理鼠标移动事件，实时更新面板位置
+   * @param {MouseEvent} e - 鼠标事件对象
+   */
   function handleMouseMove(e: MouseEvent) {
     if (!dragging) return;
     position = {
@@ -60,10 +121,19 @@
     };
   }
 
+  /**
+   * 处理鼠标释放事件，停止拖拽
+   */
   function handleMouseUp() {
     dragging = false;
   }
 
+  /**
+   * 将数值归一化到 0-100 范围内用于雷达图展示
+   * @param {number | null} value - 原始数值
+   * @param {DimensionConfig} config - 维度配置
+   * @returns {number} 归一化后的数值
+   */
   function normalizeValue(value: number | null, config: DimensionConfig): number {
     if (value === null) return 0;
     const clampedValue = Math.max(config.min, Math.min(config.max, value));
@@ -71,11 +141,26 @@
     return config.reverse ? 100 - normalized : normalized;
   }
 
+  /**
+   * 格式化数值为可读字符串
+   * @param {number | null} value - 数值
+  /**
+   * 更新或创建雷达图表
+   * 如果图表已存在则更新数据，否则创建新图表
+   * @returns {void}
+   */
+   * @param {string} unit - 单位
+   * @returns {string} 格式化后的字符串
+   */
   function formatValue(value: number | null, unit: string): string {
     if (value === null) return '-';
     return value.toLocaleString() + ' ' + unit;
   }
 
+  /**
+   * 获取当前选中的维度配置列表
+   * @returns {DimensionConfig[]} 选中维度的完整配置对象数组
+   */
   function getSelectedConfigs(): DimensionConfig[] {
     return AVAILABLE_DIMENSIONS.filter(d => selectedDimensions.includes(d.key as string));
   }
@@ -152,6 +237,11 @@
               }
             }
           }
+  /**
+   * 切换维度选中状态
+   * @param {string} key - 维度键值
+   * @returns {void}
+   */
         }
       });
     }

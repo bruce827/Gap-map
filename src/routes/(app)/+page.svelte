@@ -36,9 +36,6 @@
   let compareCities = $state<City[]>([]);
   let showComparePanel = $state(false);
   const MAX_COMPARE_CITIES = 4;
-
-  let showPanorama = $state(false);
-  let panoramaUrl = $state('');
   let locationMarker = $state<any>(null);
 
   async function loadCityDetail(cityId: string) {
@@ -168,22 +165,20 @@
       }
 
       if (typeof AMapRef?.Marker === 'function') {
+        const content = '<div class="amap-locate-marker"></div>';
         locationMarker = new AMapRef.Marker({
           position: [lng, lat],
-          map: mapRef
+          map: mapRef,
+          content,
+          offset: typeof AMapRef?.Pixel === 'function' ? new AMapRef.Pixel(-8, -8) : undefined
         });
       }
 
-      panoramaUrl = `https://uri.amap.com/panorama?position=${lng},${lat}`;
-      showPanorama = true;
+      // 方案2（计划实现）：不要使用 iframe 外链。
+      // TODO: 使用高德 JSAPI 全景能力实现可拖拽/可移动的全景弹窗。
     } catch (e) {
       alert(e instanceof Error ? e.message : String(e));
     }
-  }
-
-  function closePanorama() {
-    showPanorama = false;
-    panoramaUrl = '';
   }
  
   onMount(async () => {
@@ -348,20 +343,7 @@
     onclose={handleCloseCompare}
   />
 {/if}
-
-{#if showPanorama}
-  <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-    <div class="relative h-[70vh] w-[90vw] overflow-hidden rounded-xl bg-white shadow-2xl">
-      <button
-        class="absolute right-2 top-2 z-10 rounded bg-white/90 px-3 py-1 text-sm text-gray-700 shadow hover:bg-white"
-        onclick={closePanorama}
-      >
-        关闭
-      </button>
-      <iframe class="h-full w-full" src={panoramaUrl} title="全景地图"></iframe>
-    </div>
-  </div>
-{/if}
+<!-- 方案2（计划实现）：使用高德 JSAPI 全景能力实现可拖拽/可移动的全景弹窗（不使用 iframe 外链）。 -->
 
 <style lang="css">
   /* 隐藏高德地图logo */
@@ -372,5 +354,15 @@
   /* 隐藏高德地图版权信息 */
   :global(div.amap-copyright) {
     visibility: hidden !important;
+  }
+
+  /* 详细定位点（与普通城市点区分） */
+  :global(.amap-locate-marker) {
+    height: 16px;
+    width: 16px;
+    border-radius: 9999px;
+    background: #f97316;
+    border: 2px solid #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   }
 </style>

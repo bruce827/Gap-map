@@ -1,6 +1,14 @@
 <script lang="ts">
   import type { City } from '$lib/types';
 
+  /**
+   * 对比条形组件的属性接口
+   * @interface Props
+   * @property {City[]} cities - 待对比的城市列表
+   * @property {(cityId: string) => void} onremove - 移除城市的回调函数
+   * @property {() => void} oncompare - 开始对比的回调函数
+   * @property {number} [maxCities=4] - 最多对比城市数，默认为4
+   */
   interface Props {
     cities: City[];
     onremove: (cityId: string) => void;
@@ -10,6 +18,10 @@
 
   let { cities, onremove, oncompare, maxCities = 4 }: Props = $props();
 
+  /**
+   * 城市颜色配置数组，按顺序为不同城市分配对应的背景、边框和文本颜色
+   * @type {Array<{bg: string, border: string, text: string}>}
+   */
   const CITY_COLORS = [
     { bg: 'bg-blue-100', border: 'border-blue-500', text: 'text-blue-700' },
     { bg: 'bg-emerald-100', border: 'border-emerald-500', text: 'text-emerald-700' },
@@ -17,6 +29,11 @@
     { bg: 'bg-violet-100', border: 'border-violet-500', text: 'text-violet-700' },
   ];
 
+  /**
+   * 根据索引获取对应的颜色类配置
+   * @param {number} index - 城市在列表中的索引
+   * @returns {{bg: string, border: string, text: string}} 对应索引的颜色类配置对象
+   */
   function getColorClass(index: number) {
     return CITY_COLORS[index % CITY_COLORS.length];
   }

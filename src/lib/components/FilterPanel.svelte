@@ -1,6 +1,14 @@
 <script lang="ts">
   import type { City } from '$lib/types';
 
+  /**
+   * 筛选状态接口
+   * @interface FilterState
+   * @property {number | null} maxPrice - 房价上限（元/㎡）
+   * @property {number | null} minComfortDays - 舒适天数下限
+   * @property {string} province - 省份
+   * @property {number | null} minGreenRate - 绿化率下限（%）
+   */
   interface FilterState {
     maxPrice: number | null;
     minComfortDays: number | null;
@@ -8,11 +16,25 @@
     minGreenRate: number | null;
   }
 
+  /**
+   * 排序状态接口
+   * @interface SortState
+   * @property {'price' | 'comfort_days' | ''} field - 排序字段
+   * @property {'asc' | 'desc'} direction - 排序方向
+   */
   interface SortState {
     field: 'price' | 'comfort_days' | '';
     direction: 'asc' | 'desc';
   }
 
+  /**
+   * 筛选面板组件的属性接口
+   * @interface Props
+   * @property {City[]} cities - 城市列表数据
+   * @property {string[]} provinces - 省份列表
+   * @property {(filtered: City[]) => void} onfilter - 筛选完成时的回调函数
+   * @property {(sorted: City[]) => void} onsort - 排序完成时的回调函数
+   */
   interface Props {
     cities: City[];
     provinces: string[];
@@ -22,24 +44,71 @@
 
   let { cities, provinces, onfilter, onsort }: Props = $props();
 
+  /**
+   * 是否最小化面板
+   * @type {boolean}
+   */
   let minimized = $state(false);
+  
+  /**
+   * 面板位置坐标
+   * @type {{x: number, y: number}}
+   */
   let position = $state({ x: 20, y: 150 });
+  
+  /**
+   * 是否正在拖拽
+   * @type {boolean}
+   */
   let dragging = $state(false);
-  let dragOffset = $state({ x: 0, y: 0 });
+  
+  /**
+   * 拖拽时的偏移量
+  /**
+   * 处理鼠标按下事件
+   * @param {MouseEvent} e - 鼠标事件对象
+   */
+  function handleMouseDown(e: MouseEvent) {
+    if ((e.target as HTMLElement).closest('button, input, select')) return;
+    dragging = true;
+    dragOffset = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    };
+  }
 
-  let filters = $state<FilterState>({
-    maxPrice: null,
-    minComfortDays: null,
-    province: '',
-    minGreenRate: null
-  });
+  /**
+   * 处理鼠标移动事件
+   * @param {MouseEvent} e - 鼠标事件对象
+   */
+  function handleMouseMove(e: MouseEvent) {
+    if (!dragging) return;
+    position = {
+      x: Math.max(0, e.clientX - dragOffset.x),
+      y: Math.max(0, e.clientY - dragOffset.y)
+    };
+  }
 
+  /**
+   * 处理鼠标释放事件
+   */   * 当前排序条件
+   * @type {SortState}
+   */
   let sort = $state<SortState>({
     field: '',
     direction: 'asc'
   });
 
+  /**
+   * 筛选结果的城市数量
+   * @type {number}
+   */
   let filteredCount = $state(0);
+  
+  /**
+   * 排序后的前5个城市
+   * @type {City[]}
+   */
   let topCities = $state<City[]>([]);
 
   function handleMouseDown(e: MouseEvent) {
@@ -63,6 +132,10 @@
     dragging = false;
   }
 
+  /**
+   * 应用当前筛选条件，返回符合条件的城市列表
+   * @returns {City[]} 筛选后的城市数组
+   */
   function applyFilter(): City[] {
     return cities.filter(city => {
       if (filters.maxPrice !== null && filters.maxPrice > 0) {
@@ -77,6 +150,11 @@
       if (filters.minGreenRate !== null && filters.minGreenRate > 0) {
         if (city.green_rate === null || city.green_rate < filters.minGreenRate) return false;
       }
+  /**
+   * 对城市列表进行排序
+   * @param {City[]} data - 待排序的城市数组
+   * @returns {City[]} 排序后的城市数组
+   */
       return true;
     });
   }
@@ -90,11 +168,19 @@
 
       const aNum = aVal ?? (sort.direction === 'asc' ? Infinity : -Infinity);
       const bNum = bVal ?? (sort.direction === 'asc' ? Infinity : -Infinity);
-
+/**
+   * 处理应用按钮点击事件，应用筛选和排序
+   * @returns {void}
+   */
+  
       return sort.direction === 'asc' ? aNum - bNum : bNum - aNum;
     });
   }
 
+  /**
+   * 处理重置按钮点击事件，重置所有筛选和排序条件
+   * @returns {void}
+   */
   function handleApply() {
     const filtered = applyFilter();
     const sorted = applySort(filtered);
@@ -105,6 +191,12 @@
   }
 
   function handleReset() {
+  /**
+   * 格式化数值为可读字符串
+   * @param {number | null} value - 数值
+   * @param {string} [suffix=''] - 后缀
+   * @returns {string} 格式化后的字符串
+   */
     filters = {
       maxPrice: null,
       minComfortDays: null,

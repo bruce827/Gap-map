@@ -1,26 +1,31 @@
-generated: 2025-12-29
+generated: 2026-01-01
 project: Gap-map
 project_key: gap-map
 tracking_system: file-system
 story_location: "/Users/maylis/Desktop/github上的项目/Gap-map/_bmad-output/implementation-artifacts"
 
 development_status:
-  0-1-project-initialization: done
   epic-1: in-progress
+  0-1-project-initialization: done
   1-1-data-layer-city-list: done
   1-2-map-city-points: done
   1-3-city-details-dimensions: review
   1-4-filter-sort-single-metric: review
   1-5-compare-cities: done
   1-6-data-maintenance: done
-  epic-1-retrospective: completed
+  epic-1-retrospective: done
 
   epic-2: in-progress
   2-1-admin-city-crud: ready-for-dev
-  2-2-dynamic-data-weather-news: backlog
-  2-3-social-review-aggregation: backlog
-  2-4-favorites-tags-notes: backlog
-  2-5-composite-index-ranking: backlog
+  2-2-dynamic-data-weather-news: ready-for-dev
+  2-3-social-review-aggregation: ready-for-dev
+  2-4-favorites-tags-notes: ready-for-dev
+  2-5-composite-index-ranking: ready-for-dev
   2-6-scheduled-jobs-observability: ready-for-dev
+  epic-2-retrospective: optional
 
-  epic-2-execution-guide: completed
+  epic-3: in-progress
+  3-1-location-visual-modes: ready-for-dev
+  3-2-location-nearby-poi: ready-for-dev
+  3-3-location-accessibility: ready-for-dev
+  epic-3-retrospective: optional

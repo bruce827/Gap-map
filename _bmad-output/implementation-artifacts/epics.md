@@ -1,7 +1,42 @@
+---
+stepsCompleted: ["step-01-validate-prerequisites", "step-02-design-epics", "step-03-create-stories"]
+inputDocuments:
+  - docs/prd/prd-index.md
+  - docs/prd/prd-product.md
+  - docs/prd/prd-technical.md
+  - docs/prd/prd-map-visual.md
+  - docs/增加定位信息.md
+---
+
 # Gap-map Epics & Stories（MVP）
 
 > 目标：把 `docs/prd/prd-index.md` 中的 MVP 任务拆分清单固化为可执行的 Epic + Stories。
 > 口径：路线B（Prisma + SQLite 为 MVP 默认），动态数据与综合总分/排名均为 Phase 2（非MVP）。
+
+## Requirements Inventory（增量：定位点环境洞察 / 替代街景）
+
+### Functional Requirements（增量）
+
+FR-E3-1: 在城市详情中提供“定位”入口：将城市的行政字段拼接为可解析地址，调用高德能力解析坐标，并将当前地图缩放并居中到该坐标。
+
+FR-E3-2: 定位成功后，在地图上展示“详细定位点”标记，并与普通城市点位样式显著区分；重复定位时旧标记应被替换。
+
+FR-E3-3: 为定位点提供“更直观了解环境”的展示能力（不依赖街景/全景）：支持卫星/路网/（可选）3D 视角等地图视图切换。
+
+FR-E3-4: 支持围绕定位点做周边探索：按半径与分类展示周边 POI（如医院、地铁/公交、商超/公园等），并支持在地图与列表间联动。
+
+FR-E3-5: 支持对关键 POI 的可达性描述（可选 MVP+）：给出步行/驾车时间或距离摘要，帮助评估“生活便利度”。
+
+### NonFunctional Requirements（增量）
+
+NFR-E3-1: 失败可用：地理编码失败、字段缺失、Key/安全码缺失时要可提示并可降级，不影响主地图浏览。
+
+NFR-E3-2: 性能可用：在开启卫星/路网/POI 标记后，地图交互仍保持流畅（避免一次性渲染过多点位）。
+
+### Additional Requirements（增量）
+
+- 高德 Key 与安全机制：项目需正确配置 `AMAP_KEY` 与 `AMAP_SECURITY_CODE`，缺失时地图能力可能静默失败（需显式提示）。
+- 高德接口调用额度约束：需关注个人/企业配额与调用频率上限，避免因超限导致相关能力不可用。
 
 ---
 
@@ -190,6 +225,58 @@
 - **Dependencies**: 2-1-admin-city-crud
 - **References**:
   - [Source: docs/prd/prd-product.md#Phase 2 Backlog: 动态数据（天气/新闻）]
+
+---
+
+## Epic 3：定位点环境洞察（替代街景）
+
+### Epic 3 Objective
+
+- 在“城市定位到地图具体点位”的基础上，提供一组不依赖街景的环境洞察能力（卫星/路网/3D/周边 POI/可达性），帮助用户更直观地理解定位点周边环境。
+
+### Epic 3 Out of Scope（Epic 级）
+
+- 街景/全景（360°）能力（依赖第三方能力开放与覆盖，不作为默认方案）。
+- 大规模实时抓取/高频调用导致的稳定性与合规风险（默认按需调用 + 结果缓存/限流）。
+
+### Story 3-1：定位点环境视图增强（卫星/路网/3D）
+
+- **Story Key**: 3-1-location-visual-modes
+- **User Story**: 作为用户，我希望在定位到某个点位后，能够快速切换卫星/路网/（可选）3D 视图，从而更直观地观察该点周边的地形、道路与建成区分布。
+- **Acceptance Criteria**:
+  1. 定位成功后，地图可一键切换至少两种视图：标准、卫星（可叠加路网为加分）。
+  2. 切换视图不影响定位点 marker 的展示，且切换过程不导致页面崩溃。
+  3. 视图切换在弱网/低性能设备上有降级策略（例如关闭 3D/减少叠加层）。
+- **Dependencies**: 1-2-map-city-points, 1-3-city-details-dimensions
+- **References**:
+  - [Source: docs/增加定位信息.md]
+  - [Source: docs/prd/prd-product.md#功能1: 交互式地图展示]
+
+### Story 3-2：定位点周边 POI 探索（分类 + 半径 + 列表联动）
+
+- **Story Key**: 3-2-location-nearby-poi
+- **User Story**: 作为用户，我希望看到定位点周边的关键生活设施（如医院、交通、商超、公园等）并能在列表与地图间联动，从而更系统地评估“生活便利度”。
+- **Acceptance Criteria**:
+  1. 支持选择探索半径（至少包含 500m/1km 两档）。
+  2. 支持按分类查看 POI（至少 3 类：医疗、交通、生活/休闲）。
+  3. POI 列表点击后，地图居中到该 POI 并高亮；地图点击 POI 可反向高亮列表项。
+  4. 支持“在高德打开”外链（新开 Tab），用于查看 POI 的更详细信息（例如图片/评论/电话等）。
+- **Dependencies**: 3-1-location-visual-modes
+- **References**:
+  - [Source: docs/prd/prd-product.md#1.1.4 医疗资源]
+  - [Source: docs/prd/prd-product.md#1.4.3 文化休闲设施]
+
+### Story 3-3：定位点可达性摘要（到关键 POI 的时间/距离）
+
+- **Story Key**: 3-3-location-accessibility
+- **User Story**: 作为用户，我希望看到定位点到关键设施的步行/驾车时间或距离摘要，从而更直观地判断通勤与生活成本。
+- **Acceptance Criteria**:
+  1. 对用户选定的 1-3 个 POI，可展示步行或驾车的时间/距离摘要。
+  2. 计算失败或受限时可降级为直线距离，并给出清晰提示。
+  3. 相关 Key/额度不足时不影响主流程（仅隐藏/禁用此能力）。
+- **Dependencies**: 3-2-location-nearby-poi
+- **References**:
+  - [Source: docs/prd/prd-product.md#功能12: 移动场景适配]
 
 ---
 

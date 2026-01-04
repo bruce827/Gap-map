@@ -1,6 +1,17 @@
 <script lang="ts">
   import type { City } from '$lib/types';
 
+  /**
+   * 城市详情卡片组件的属性接口
+   * @interface Props
+   * @property {City | null} city - 城市数据对象
+   * @property {boolean} [loading=false] - 是否加载中
+   * @property {string} [error=''] - 错误信息
+   * @property {() => void} [onclose] - 关闭卡片的回调函数
+   * @property {(city: City) => void} [onlocate] - 定位城市的回调函数
+   * @property {(city: City) => void} [onaddcompare] - 添加到对比的回调函数
+   * @property {boolean} [isInCompare=false] - 是否已在对比列表中
+   */
   interface Props {
     city: City | null;
     loading?: boolean;
@@ -13,11 +24,34 @@
 
   let { city, loading = false, error = '', onclose, onlocate, onaddcompare, isInCompare = false }: Props = $props();
 
+  /**
+   * 是否最小化卡片
+   * @type {boolean}
+   */
   let minimized = $state(false);
+  
+  /**
+   * 卡片位置坐标
+   * @type {{x: number, y: number}}
+   */
   let position = $state({ x: 20, y: 80 });
+  
+  /**
+   * 是否正在拖拽卡片
+   * @type {boolean}
+   */
   let dragging = $state(false);
+  
+  /**
+   * 拖拽时的偏移量
+   * @type {{x: number, y: number}}
+   */
   let dragOffset = $state({ x: 0, y: 0 });
 
+  /**
+   * 处理鼠标按下事件
+   * @param {MouseEvent} e - 鼠标事件对象
+   */
   function handleMouseDown(e: MouseEvent) {
     if ((e.target as HTMLElement).closest('button')) return;
     dragging = true;
@@ -27,6 +61,10 @@
     };
   }
 
+  /**
+   * 处理鼠标移动事件
+   * @param {MouseEvent} e - 鼠标事件对象
+   */
   function handleMouseMove(e: MouseEvent) {
     if (!dragging) return;
     position = {
@@ -35,10 +73,19 @@
     };
   }
 
+  /**
+   * 处理鼠标释放事件
+   */
   function handleMouseUp() {
     dragging = false;
   }
 
+  /**
+   * 格式化数值为可读字符串
+   * @param {string | number | null | undefined} value - 待格式化的值
+   * @param {string} [suffix=''] - 后缀
+   * @returns {string} 格式化后的字符串
+   */
   function formatValue(value: string | number | null | undefined, suffix = ''): string {
     if (value === null || value === undefined) return '-';
     if (typeof value === 'number') {
